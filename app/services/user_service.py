@@ -61,6 +61,7 @@ class UserService:
             email=payload.email.strip().lower(),
             role=payload.role,
             is_active=payload.is_active,
+            must_change_password=True,
             created_at=get_utc_now(),
             updated_at=get_utc_now()
         )
@@ -141,6 +142,7 @@ class UserService:
             raise BusinessLogicException("New password must be at least 8 characters long.")
 
         user.password_hash = hash_password(new_password)
+        user.must_change_password = True
         user.updated_at = get_utc_now()
         return await user_repo.update(user)
 
@@ -162,6 +164,7 @@ class UserService:
             raise BusinessLogicException("New password must be at least 8 characters long.")
 
         user.password_hash = hash_password(new_password)
+        user.must_change_password = False
         user.updated_at = get_utc_now()
         return await user_repo.update(user)
 

@@ -48,6 +48,12 @@ class User(Base):
         nullable=False,
         default=True
     )
+    must_change_password: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=True,
+        server_default="1"
+    )
     last_login: Mapped[Optional[datetime]] = mapped_column(
         DateTime(timezone=True),
         nullable=True

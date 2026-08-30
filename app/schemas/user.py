@@ -13,6 +13,7 @@ class UserResponse(BaseModel):
     email: str
     role: UserRole
     is_active: bool
+    must_change_password: bool = False
     last_login: Optional[datetime] = None
     created_at: datetime
     updated_at: datetime
