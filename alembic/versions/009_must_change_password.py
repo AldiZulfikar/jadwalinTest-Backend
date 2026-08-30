@@ -24,10 +24,12 @@ def upgrade() -> None:
     if "must_change_password" not in columns:
         op.add_column(
             "users",
-            sa.Column("must_change_password", sa.Boolean(), nullable=False, server_default="1")
+            sa.Column("must_change_password", sa.Boolean(), nullable=False, server_default=sa.text("true"))
         )
+        is_sqlite = bind.dialect.name == "sqlite"
+        false_val = "0" if is_sqlite else "false"
         # Update seed users (qa, requester) to not force password change initially
-        op.execute("UPDATE users SET must_change_password = 0 WHERE username IN ('qa', 'requester')")
+        op.execute(f"UPDATE users SET must_change_password = {false_val} WHERE username IN ('qa', 'requester')")
 
 
 def downgrade() -> None:

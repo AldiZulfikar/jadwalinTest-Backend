@@ -18,44 +18,48 @@ depends_on: Union[str, Sequence[str], None] = None
 # Pre-hashed bcrypt password for "ChangeMe123!"
 DEFAULT_HASH = bcrypt.hashpw(b"ChangeMe123!", bcrypt.gensalt()).decode("utf-8")
 
-QA_USER_ID = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-REQUESTER_USER_ID = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+QA_USER_ID = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
+REQUESTER_USER_ID = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"
 
 
 def upgrade() -> None:
-    # 1. Insert QA User
+    bind = op.get_bind()
+    is_sqlite = bind.dialect.name == "sqlite"
+    true_val = "1" if is_sqlite else "true"
+
+    # 1. Insert QA User if not exists
     op.execute(
         f"""
         INSERT INTO users (id, username, password_hash, full_name, email, role, is_active, created_at, updated_at)
-        VALUES (
+        SELECT
             '{QA_USER_ID}',
             'qa',
             '{DEFAULT_HASH}',
             'QA Lead Manager',
             'qa.manager@example.com',
             'QA',
-            1,
+            {true_val},
             CURRENT_TIMESTAMP,
             CURRENT_TIMESTAMP
-        );
+        WHERE NOT EXISTS (SELECT 1 FROM users WHERE username = 'qa');
         """
     )
 
-    # 2. Insert Requester User
+    # 2. Insert Requester User if not exists
     op.execute(
         f"""
         INSERT INTO users (id, username, password_hash, full_name, email, role, is_active, created_at, updated_at)
-        VALUES (
+        SELECT
             '{REQUESTER_USER_ID}',
             'requester',
             '{DEFAULT_HASH}',
             'Application Developer',
             'requester@example.com',
             'Requester',
-            1,
+            {true_val},
             CURRENT_TIMESTAMP,
             CURRENT_TIMESTAMP
-        );
+        WHERE NOT EXISTS (SELECT 1 FROM users WHERE username = 'requester');
         """
     )
 
