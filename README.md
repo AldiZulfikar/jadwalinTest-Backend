@@ -202,6 +202,7 @@ The database schema is managed via **Alembic**. All migrations are executable an
 7. `007_seed_iam_users`: Default seed accounts (`qa` & `requester`).
 8. `008_notification_logs`: Notification audit logs table (`notification_logs`).
 9. `009_must_change_password`: Added `must_change_password` column to `users` table for mandatory password changes.
+10. `010_split_uat_regresi_add_staging`: Separated `UAT` & `REGRESI` environments and added `STAGING` environment.
 
 ### Migration Commands
 
