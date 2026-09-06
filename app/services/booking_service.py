@@ -242,8 +242,31 @@ class BookingService:
         """Helper to build booking dictionary, resolve recipients, and call EmailService safely."""
         try:
             env_name = str(booking.environment_id)
-            if hasattr(booking, "environment") and booking.environment:
-                env_name = getattr(booking.environment, "name", str(booking.environment_id))
+            if hasattr(booking, "environment_rel") and booking.environment_rel:
+                env_code = getattr(booking.environment_rel, "code", "")
+                env_full_name = getattr(booking.environment_rel, "name", "")
+                if env_code and env_full_name:
+                    env_name = f"{env_code} ({env_full_name})"
+                elif env_code or env_full_name:
+                    env_name = env_code or env_full_name
+            elif hasattr(booking, "environment") and booking.environment:
+                env_code = getattr(booking.environment, "code", "")
+                env_full_name = getattr(booking.environment, "name", "")
+                if env_code and env_full_name:
+                    env_name = f"{env_code} ({env_full_name})"
+                elif env_code or env_full_name:
+                    env_name = env_code or env_full_name
+
+            # Fallback: if env_name is still UUID, fetch environment from database
+            if env_name == str(booking.environment_id):
+                env_obj = await self.environment_repo.find_by_id(booking.environment_id)
+                if env_obj:
+                    env_code = getattr(env_obj, "code", "")
+                    env_full_name = getattr(env_obj, "name", "")
+                    if env_code and env_full_name:
+                        env_name = f"{env_code} ({env_full_name})"
+                    elif env_code or env_full_name:
+                        env_name = env_code or env_full_name
 
             booking_dict = {
                 "id": str(booking.id),
