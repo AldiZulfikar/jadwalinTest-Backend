@@ -14,7 +14,7 @@ from app.schemas.booking import (
 )
 from app.schemas.common import APIResponse, PaginatedResponse
 from app.services.booking_service import BookingService
-from app.api.deps import get_booking_service, get_current_user, require_role
+from app.api.deps import get_booking_service, get_current_user, get_optional_current_user, require_role
 
 router = APIRouter(prefix="/bookings", tags=["Bookings"])
 
@@ -46,7 +46,7 @@ async def create_booking(
     response_model=APIResponse[PaginatedResponse[BookingResponse]],
     status_code=status.HTTP_200_OK,
     summary="List & Filter Bookings (Paginated & RBAC Scoped)",
-    description="Retrieves paginated bookings. QA users view all bookings; Requesters view all bookings by default for calendar scheduling, or filter to my_bookings_only."
+    description="Retrieves paginated bookings. Publicly accessible for calendar schedule viewing. Requesters can filter to my_bookings_only."
 )
 async def list_bookings(
     page: int = Query(1, ge=1),
@@ -61,11 +61,16 @@ async def list_bookings(
     test_type: Optional[TestType] = Query(None),
     my_bookings_only: Optional[bool] = Query(False),
     service: BookingService = Depends(get_booking_service),
-    current_user: User = Depends(get_current_user)
+    current_user: Optional[User] = Depends(get_optional_current_user)
 ):
     filter_user_id = None
     filter_user_email = None
     if my_bookings_only:
+        if not current_user:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Authentication required to view personal bookings."
+            )
         filter_user_id = current_user.id
         filter_user_email = current_user.email
 
@@ -112,12 +117,12 @@ async def list_bookings(
 async def get_booking_by_id(
     id: UUID,
     service: BookingService = Depends(get_booking_service),
-    current_user: User = Depends(get_current_user)
+    current_user: Optional[User] = Depends(get_optional_current_user)
 ):
     booking = await service.get_booking_by_id(id)
 
-    # Ownership check for Requester
-    if current_user.role == UserRole.REQUESTER:
+    # Ownership check for Requester if authenticated
+    if current_user and current_user.role == UserRole.REQUESTER:
         is_owner = (booking.user_id == current_user.id) or (booking.pic_email.lower() == current_user.email.lower())
         if not is_owner:
             raise HTTPException(
